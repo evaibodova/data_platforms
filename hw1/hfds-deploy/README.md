@@ -6,7 +6,7 @@
 - 1 SecondaryNameNode
 - 3 DataNode
 
-## Топология
+## Топология кластера
 
 - `team-03-en` — Edge Node, SecondaryNameNode
 - `team-03-nn` — NameNode, DataNode
@@ -51,7 +51,7 @@ bash scripts/09_check_cluster.sh
 
 `07_format_namenode.sh` необходимо запускать только при первоначальной инициализации нового кластера.
 
-## Верификация
+## Проверка кластера
 
 Скрипт `09_check_cluster.sh` проверяет:
 
