@@ -1,8 +1,6 @@
 #!/bin/bash
-# shellcheck disable=SC2034
 set -euo pipefail
 PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-# Используем топологию и версию Hadoop из ДЗ 2.
 source "$PROJECT_DIR/scripts/variables.sh"
 HIVE_VERSION="4.0.0-alpha-2"
 HIVE_HOME="/home/hadoop/apache-hive-${HIVE_VERSION}-bin"
