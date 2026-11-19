@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-for step in 20_install_spark.sh 21_setup_spark_env.sh 22_load_spark_data.sh 23_run_spark.sh 24_check_spark.sh
+for step in 25_install_prefect.sh 26_setup_prefect.sh 27_run_flow.sh 28_check_flow.sh
 do
     echo "Running scripts/$step"
     bash "scripts/$step"
