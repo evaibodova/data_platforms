@@ -1,0 +1,15 @@
+CREATE DATABASE IF NOT EXISTS test;
+CREATE EXTERNAL TABLE IF NOT EXISTS test.colours (
+    colour STRING,
+    number INT
+)
+COMMENT 'colours table'
+PARTITIONED BY (dt STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/external/test.db/colours';
+SHOW DATABASES;
+USE test;
+SHOW TABLES;
+DESCRIBE colours;
+SHOW CREATE TABLE colours;
