@@ -1,32 +1,32 @@
-# Spark Deployment
+# Prefect Deployment
 
-Автоматизированное развертывание Apache Spark 3.5.3 под управлением YARN, чтение и преобразование данных из HDFS, сохранение результата в партиционированную таблицу и проверка чтения через Hive.
+Автоматизированный запуск потока Prefect для обработки данных в Apache Spark под управлением YARN и сохранения результата как таблицы Hive
 
 ## Топология кластера
 
-- `team-03-en` — Edge Node, SecondaryNameNode, Spark Driver, HiveServer2, Hive Metastore, MySQL
+- `team-03-en` — Edge Node, SecondaryNameNode, Prefect, Spark Driver, HiveServer2, Hive Metastore, MySQL
 - `team-03-nn` — NameNode, DataNode, ResourceManager, NodeManager, JobHistoryServer
 - `team-03-00` — DataNode, NodeManager
 - `team-03-01` — DataNode, NodeManager
 
-Spark запускается в режиме `yarn` с `deploy-mode client`. Driver работает на `team-03-en`, executors запускаются под управлением YARN на worker-нодах. Данные хранятся в HDFS, результат доступен через Beeline и существующий HiveServer2.
-
 ## Requirements
 
-Все скрипты запускаются от `team` на `team-03-en` из корня проекта `spark-deploy`.
+Все скрипты запускаются от `team` на `team-03-en` из корня проекта `prefect-deploy`.
 
 Необходимы:
 
-- Ubuntu 22.04/24.04, Java 11;
-- работающий Hadoop 3.4.0 в `/home/hadoop/hadoop-3.4.0`, HDFS, YARN и JobHistoryServer;
-- работающие HiveServer2, Hive Metastore и MySQL из предыдущего ДЗ;
-- пользователь `hadoop`, настроенный SSH между узлами;
-- права `sudo`, для удаленных команд — без запроса пароля;
-- доступ к Apache Archive для загрузки Spark.
+- Python 3.11 или новее, Java 11;
+- настроенные и работающие HDFS, YARN и Hive из предыдущих ДЗ;
+- установленный Spark 3.5.3 и окружение из ДЗ-4;
+- права `sudo` для команд существующих скриптов и доступ к репозиториям Ubuntu и PyPI.
 
-Имена узлов должны корректно разрешаться в сетевые IP-адреса. Скрипты `00–19` относятся к предыдущим ДЗ и не вызываются из `deploy.sh`. Предполагается, что HDFS, YARN и Hive уже настроены и запущены.
+Переменные окружения находятся в `scripts/variables.sh`. Для настройки зависимостей используются файлы предыдущих ДЗ. Скрипты `23` и `24` вызываются внутри потока
 
-Переменные окружения и функции запуска находятся в `scripts/variables.sh`. Файл `.env` не добавляется в Git.
+Если Hive остановлен, выполнить:
+
+```bash
+bash scripts/16_start_hive.sh
+```
 
 ## Развертывание
 
@@ -39,65 +39,56 @@ bash scripts/deploy.sh
 Скрипт последовательно запускает:
 
 ```bash
-bash scripts/20_install_spark.sh
-bash scripts/21_setup_spark_env.sh
-bash scripts/22_load_spark_data.sh
-bash scripts/23_run_spark.sh
-bash scripts/24_check_spark.sh
+bash scripts/25_install_prefect.sh
+bash scripts/26_setup_prefect.sh
+bash scripts/27_run_flow.sh
+bash scripts/28_check_flow.sh
 ```
 
-Выполняются установка Spark и проверка контрольной суммы, настройка окружения, загрузка данных в HDFS, запуск Spark-сессии под управлением YARN, преобразование данных, регистрация таблицы и проверка.
+Выполняются установка Prefect 3.9.3, создание конфигурации, запуск потока и проверка результата
 
 ## Загрузка и преобразование данных
 
-Тестовые данные находятся в `data/`. Имя файла — `YYYY-MM-DD.tsv`, содержимое — два поля через табуляцию без заголовка: цвет и число.
+В `data/` находятся тестовые tsv-файлы без заголовка: цвет и число через табуляцию. Имя файла `YYYY-MM-DD.tsv` определяет дату.
 
-Для отдельного запуска загрузки:
+Если данные еще не загружены в HDFS, выполнить:
 
 ```bash
 bash scripts/22_load_spark_data.sh
 ```
 
-Скрипт проверяет файлы и передает их в HDFS в каталог `/user/hadoop/spark-input/colours/dt=YYYY-MM-DD/`.
+Поток `flows/colours_flow.py` проверяет входной каталог HDFS, запускает обработку через `23_run_spark.sh` и проверяет результат через `24_check_spark.sh`
 
-Код `spark/colours_transform.scala` использует созданную сессию Spark для чтения TSV, приведения чисел к `INT`, нормализации названий цветов и группировки по дате и цвету. Для каждой группы вычисляются количество строк, сумма и максимальное значение.
+Spark читает tsv из HDFS, нормализует названия цветов, преобразует числа в `int` и вычисляет количество, сумму и максимум по дате и цвету. Результат сохраняется в Parquet с партиционированием по `dt` и регистрируется как внешняя таблица `test.colours_summary` через `sql/02_create_spark_table.sql`
 
-Результат сохраняется в Parquet с партиционированием по `dt`. Файл `sql/02_create_spark_table.sql` регистрирует внешнюю таблицу `test.colours_summary`, а `MSCK REPAIR TABLE` синхронизирует партиции в Hive.
+При ошибке задача и поток завершаются с ошибкой. Повторная обработка заменяет результат без дублирования строк
 
-Повторный запуск обработки заменяет результат без дублирования строк. Исходная таблица `test.colours` не изменяется.
-
-## Проверка Spark
+## Проверка потока
 
 Скрипт:
 
 ```bash
-bash scripts/24_check_spark.sh
+bash scripts/28_check_flow.sh
 ```
 
 проверяет:
 
-- работу Metastore и HiveServer2;
-- возможность чтения результата стандартным клиентом Hive — Beeline;
-- наличие двух тестовых партиций;
-- значения всех шести результирующих строк.
-
-Ожидаемый результат для `dt`, `colour`, `row_count`, `total_number`, `max_number`:
-
-```text
-2024-08-09    blue     1    7     7
-2024-08-09    green    1    3     3
-2024-08-09    red      2    17    12
-2024-08-10    blue     2    19    15
-2024-08-10    green    1    8     8
-2024-08-10    red      1    9     9
-```
+- сохраненный статус потока `COMPLETED` и идентификатор запуска;
+- чтение таблицы через Beeline;
+- две тестовые партиции и значения всех шести результирующих строк.
 
 При успешной проверке выводится:
 
 ```text
-OK: Hive reads Spark results; both partitions and all six rows are correct
+OK: Prefect flow completed successfully and the result table is correct
 ```
+
+Полный запуск должен завершиться с кодом `0`
 
 ## Остановка
 
-Сессия Spark завершается автоматически после обработки через `spark.stop()`. HDFS, YARN, Hive и MySQL продолжают работать; данные и таблицы сохраняются.
+Сессия Spark и временный сервер Prefect завершаются автоматически. HDFS, YARN и Hive продолжают работать; данные сохраняются
+
+## Примечания
+
+Директории `.venv/`, `.prefect/`, `logs/` и файл `.env` должны быть добавлены в `.gitignore`
