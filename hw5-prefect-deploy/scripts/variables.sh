@@ -68,3 +68,13 @@ as_spark()
         SPARK_DIST_CLASSPATH="$SPARK_HOME/jars/*:$(as_hadoop "$HADOOP_HOME/bin/hadoop" classpath)" \
         "$@"
 }
+
+
+PREFECT_VERSION="3.9.3"
+PREFECT_VENV="$PROJECT_DIR/.venv"
+PREFECT_HOME="$PROJECT_DIR/.prefect"
+
+PREFECT_FLOW_FILE="$PROJECT_DIR/flows/colours_flow.py"
+PREFECT_RUN_FILE="$PROJECT_DIR/logs/prefect-last-run.json"
+
+export PREFECT_SERVER_ANALYTICS_ENABLED=false
