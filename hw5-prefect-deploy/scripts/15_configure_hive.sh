@@ -1,5 +1,5 @@
 #!/bin/bash
-source "$(dirname "$0")/hive_variables.sh"
+source "$(dirname "$0")/variables.sh"
 
 as_hadoop tee /home/hadoop/hive-env.sh > /dev/null <<EOF
 export JAVA_HOME=$JAVA_HOME

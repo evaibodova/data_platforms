@@ -78,3 +78,6 @@ PREFECT_FLOW_FILE="$PROJECT_DIR/flows/colours_flow.py"
 PREFECT_RUN_FILE="$PROJECT_DIR/logs/prefect-last-run.json"
 
 export PREFECT_SERVER_ANALYTICS_ENABLED=false
+
+export PREFECT_HOME
+unset PREFECT_API_URL

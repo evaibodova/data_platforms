@@ -1,5 +1,5 @@
 #!/bin/bash
-source "$(dirname "$0")/hive_variables.sh"
+source "$(dirname "$0")/variables.sh"
 
 beeline -f /dev/stdin < "$PROJECT_DIR/sql/01_create_table.sql"
 
