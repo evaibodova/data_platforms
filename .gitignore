@@ -3,6 +3,15 @@
 
 # environment
 .env
+.venv/
 
 # temporary SSH files
 hadoop_ssh/
+
+.env
+.prefect/
+logs/
+hadoop_ssh/
+.load.lock
+__pycache__/
+*.pyc
